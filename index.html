@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Composite Metronome</title>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/0.9.0/angular-material.css">
+    <link href="css/style.css" rel="stylesheet">
+	<link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32">
+	<link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96">
+	<link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body ng-app="metronome" ng-controller="homeController">
+    <md-content>
+
+        <md-toolbar class="md-tall md-primary">
+            <h2 class="md-toolbar-tools">
+                <ng-md-icon icon="alarm_on" style="fill: white" size="40"></ng-md-icon>
+	        	<span flex=""></span>
+	        	<a href="https://twitter.com/NunoGRocha" target="_blank"><md-button>Contact Me</md-button></a>
+	      	</h2>
+            <div layout="row" layout-wrap style="margin-top:46px;">
+                <div flex-gt-lg="10" flex-lg="10" flex-md="10"></div>
+                <div flex-gt-lg="80" flex-lg="80" flex-md="90">
+                    <div class="md-toolbar-middle">
+                        <hero>Composite Metronome</hero>
+                        </br>
+                        <sub-hero>Create your own metronome loops with custom time signatures</sub-hero>
+                    </div>
+                </div>
+                <div flex-gt-lg="10" flex-lg="10" flex-md="10"></div>
+            </div>
+        </md-toolbar>
+
+        </br>
+
+        <div layout-gt-sm="row" layout-sm="column" class="content-body" layout-wrap>
+            <div flex-gt-lg="10" flex-lg="10" flex-md="10"></div>
+            <div flex-gt-lg="30" flex-lg="40" flex-md="50">
+                <md-card>
+                    <md-card-content-head>
+                        <h2 class="md-title">BPMs</h2>
+                    </md-card-content-head>
+                    <md-card-content layout-padding layout="row">
+
+                        <md-input-container flex="70">
+                            <md-slider flex min="0" max="300" ng-model="tempo" aria-label="tempo" id="tempo-slider"></md-slider>
+                        </md-input-container>
+                        <div flex="5"></div>
+                        <md-input-container flex="25">
+                            <input type="number" ng-model="tempo" required aria-label="tempo" aria-controls="tempo-slider">
+                        </md-input-container>
+
+                    </md-card-content>
+
+                    <div class="md-actions" layout="row" layout-align="end center" style="padding: 10px;">
+                        <md-button ng-click="start();" style="width:100%" class="md-raised md-primary">Start
+                            <ng-md-icon class="button-icon" icon="play_arrow" style="fill: white" size="25"></ng-md-icon>
+                        </md-button>
+                        <md-button ng-click="stp();" style="width:100%" class="md-raised md-warn">Stop
+                            <ng-md-icon class="button-icon" icon="stop" style="fill: white" size="25"></ng-md-icon>
+                        </md-button>
+                    </div>
+
+                </md-card>
+
+                <md-card>
+                    <md-card-content-head>
+                        <h2 class="md-title">Add To The Loop</h2>
+                    </md-card-content-head>
+                    <md-card-content>
+
+                        <h3>Subdivisions</h3>
+                        <md-input-container>
+                            <select ng-model="resolution" ng-options=" signature.name for signature in resolutions track by signature.value">
+                            </select>
+                        </md-input-container>
+
+                        <h3>Signature</h3>
+                        <div layout="row">
+                            <md-input-container flex="45">
+                                <select ng-model="signature" ng-options=" signature.value for signature in signatures track by signature.value">
+                                </select>
+                            </md-input-container>
+                            <div flex="10" class="tempo-bar">
+                                /
+                            </div>
+                            <md-input-container flex="45">
+                                <select ng-model="signaturebottom" ng-change="bottomChange()" ng-options=" signature.name for signature in signaturesbottom track by signature.value">
+                                </select>
+                            </md-input-container>
+                        </div>
+
+                        <h3>Silence</h3>
+                        <md-input-container>
+                            <md-checkbox ng-click="silenceChange()" aria-label="Checkbox">
+                                Add as a Silence Block
+                            </md-checkbox>
+                        </md-input-container>
+
+                    </md-card-content>
+
+                    <div class="md-actions" layout="row" layout-align="end center" style="padding: 10px;">
+                        <md-button ng-click="addTimeline(resolution, signature, signaturebottom.name)" style="width:100%" class="md-raised md-primary">Add
+                            <ng-md-icon class="button-icon" icon="playlist_add" style="fill: white" size="25"></ng-md-icon>
+                        </md-button>
+                    </div>
+
+                </md-card>
+            </div>
+            <div flex-gt-lg="50" flex-lg="40" flex-md="30">
+                <md-card>
+
+
+                    <md-card-content-head>
+                        <h2 class="md-title">Loop</h2>
+                    </md-card-content-head>
+
+
+                    <md-card-content>
+                        <list dnd-list="timelineQueue">
+                            <element
+                            ng-value="{{timeline.index}}"
+                            dnd-draggable="timeline"
+                            dnd-moved="timelineQueue.splice($index, 1)"
+                            dnd-effect-allowed="move; selectTimeline(0)"
+                            ng-class="{ 'selected-element' : $index == fronttimeline , 'deselected-element' : $index != fronttimeline }"
+                            ng-repeat="timeline in timelineQueue"
+                            index="{{$index}}"
+                            ng-click="selectTimeline($index)">
+                                {{timeline.signature}}/{{timeline.signaturebottom}} <em>({{timeline.nrString}})</em>
+                                <em ng-show="{{timeline.mute}}">- Silence</em>
+                                <ng-md-icon ng-click="removeTimeline(timeline);" icon="cancel" class="element-remove rotate" size="30"></ng-md-icon>
+                            </element>
+                        </list>
+                    </md-card-content>
+                </md-card>
+
+            </div>
+            <div flex-gt-lg="10" flex-lg="10" flex-md="10">
+                <div class="fab-volume">
+                    <div class="volume-container">
+                      Volume
+                    </div>
+                    <md-button ng-click="showAudio = ! showAudio" aria-label="Float Action Button" class="md-fab md-accent">
+                        <ng-md-icon icon="volume_down" style="fill: white;position:relative;top:+10px;" size="38"></ng-md-icon>
+                    </md-button>
+                    <div class="fab-volumes animate-hide" ng-show="showAudio">
+                        <md-button class="md-fab md-mini" ng-click="volumeUp()" aria-label="Eat cake">
+                            <ng-md-icon icon="add" style="fill: white;position:relative;top:+7px;" size="22"></ng-md-icon>
+                            <md-tooltip>
+                                Volume Up
+                            </md-tooltip>
+                        </md-button>
+                    </div>
+                    <div class="fab-volumes animate-hide" ng-show="showAudio">
+                        <md-button class="md-fab md-mini" ng-click="volumeDown()" aria-label="Eat cake">
+                            <ng-md-icon icon="remove" style="fill: white;position:relative;top:+7px;" size="22"></ng-md-icon>
+                            <md-tooltip>
+                                Volume Down
+                            </md-tooltip>
+                        </md-button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+		<md-toolbar class="md-primary">
+			<div layout="row" layout-wrap >
+                <div flex-gt-lg="10" flex-lg="10" flex-md="10"></div>
+                <div flex-gt-lg="80" flex-lg="80" flex-md="80">
+                    <div class="md-toolbar-middle" style="  margin-top: 21px;">
+                        <sub-hero>© 2015 Nuno Rocha</sub-hero>
+                    </div>
+                </div>
+                <div flex-gt-lg="10" flex-lg="10" flex-md="10"></div>
+			</div>
+        </md-toolbar>
+
+    </md-content>
+
+
+
+    <script src="js/web-audio-scheduler.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.0-rc.1/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.0-rc.1/angular-animate.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.0-rc.1/angular-aria.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angular_material/0.9.0/angular-material.min.js"></script>
+    <script src="js/angular-drag-and-drop-lists.js"></script>
+    <script src="js/ngStorage.js"></script>
+    <script src="js/angular-material-icons.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/controller.js"></script>
+</body>
+
+</html>
